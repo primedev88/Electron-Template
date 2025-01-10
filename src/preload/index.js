@@ -5,6 +5,10 @@ import { electronAPI } from '@electron-toolkit/preload';
 const customAPI = {
   // Define your custom APIs here
   turnOnHotspot: (ssid, password) => ipcRenderer.invoke('turn-on-hotspot', ssid, password),
+  
+  sendInput: (data) => ipcRenderer.send('terminal-input', data),
+  onOutput: (callback) => ipcRenderer.on('terminal-output', (_, data) => callback(data)),
+
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to

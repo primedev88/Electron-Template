@@ -1,0 +1,8 @@
+/* Ensure terminal container has a defined size */
+.terminalContainer {
+    width: 60vw;
+    height: 50vh;
+    display: flex;
+    flex-direction: column;
+  }
+  

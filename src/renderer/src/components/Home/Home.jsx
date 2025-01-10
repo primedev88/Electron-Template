@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Credential from '../Form/Credential';
 import styles from './Home.module.css';
 import { MdOutlineSettings } from 'react-icons/md';
+import TerminalComponent from '../Terminal/Terminal';
 
 const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +50,12 @@ const Home = () => {
                     />
                 )}
             </span>
+            <div style={{ height: '50vh', width: '100vw', display: 'flex', flexDirection: 'column' ,justifyContent:'center',alignItems:'center'}}>
+                <h1>Terminal</h1>
+                <div style={{ flex: 1 }}>
+                    <TerminalComponent />
+                </div>
+            </div>
         </>
     );
 };

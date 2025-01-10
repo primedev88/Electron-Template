@@ -3,11 +3,16 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import { setupRoutes } from './routes/ipcRoutes'
+//import { setupRoutes } from './routes/ipcRoutes'
+
+const { ipcMain } = require('electron');
+const pty = require('node-pty');
+
+let mainWindow;
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -15,7 +20,9 @@ function createWindow() {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      contextIsolation: true,
+      enableRemoteModule: false,
     }
   })
 
@@ -35,6 +42,32 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  const ptyProcess = pty.spawn('bash', [], {
+    name: 'xterm-color',
+    cols: 80,
+    rows: 24,
+    cwd: process.env.HOME || require('os').homedir(), // Ensure it points to the home directory
+    env: {
+        ...process.env,
+        PS1: '\\w $ ', // Custom prompt to show the working directory
+    },
+  });
+
+  // Handle terminal output and send it to the renderer
+  ptyProcess.on('data', (data) => {
+    mainWindow.webContents.send('terminal-output', data);
+  });
+
+  // Handle input from the renderer and write it to the terminal
+  ipcMain.on('terminal-input', (event, input) => {
+    ptyProcess.write(input);
+  });
+
+  // Resize terminal when the renderer requests
+  ipcMain.on('terminal-resize', (event, cols, rows) => {
+    ptyProcess.resize(cols, rows);
+  });
 }
 
 // This method will be called when Electron has finished
@@ -52,7 +85,8 @@ app.whenReady().then(() => {
   })
 
   // Setup IPC routes
-  setupRoutes(); 
+  //setupRoutes(mainWindow); 
+  
 
   createWindow()
 
