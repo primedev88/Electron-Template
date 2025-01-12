@@ -4,46 +4,47 @@ import 'xterm/css/xterm.css';
 
 const TerminalComponent = () => {
   const terminalRef = useRef(null);
-  const term = useRef(null);
+  const xterm = useRef(null);
 
   useEffect(() => {
-    if (terminalRef.current) {
-      const terminal = new Terminal({
-        cursorBlink: true,
-        cols: 80,
-        rows: 24,
-        theme: {
-          background: '#1e1e1e',
-          foreground: '#ffffff',
-        },
-      });
-      terminal.open(terminalRef.current);
+    // Initialize xterm.js
+    xterm.current = new Terminal({
+      cursorBlink: true,
+      disableStdin: false, // Allow input
+      theme: { background: '#1d1f21' }, // Optional: Set a dark background
+    });
 
-      // Send user input to the backend
-      terminal.onData((data) => window.electronAPI.sendInput(data));
+    xterm.current.open(terminalRef.current);
 
-      // Display backend output
-      window.electronAPI.onOutput((data) => terminal.write(data));
+    // Send data to the backend when typing
+    xterm.current.onData((data) => {
+      window.electronAPI.sendToTerminal(data); // Forward input to the backend
+    });
 
-      term.current = terminal;
-    }
+    // Listen for output from the backend
+    window.electronAPI.onTerminalOutput((data) => {
+      xterm.current.write(data); // Render output from the backend
+    });
+ 
+    // Handle resizing
+    const resizeObserver = new ResizeObserver(() => {
+      const cols = Math.floor(
+        terminalRef.current.offsetWidth / xterm.current._core._renderService.dimensions.actualCellWidth
+      );
+      const rows = Math.floor(
+        terminalRef.current.offsetHeight / xterm.current._core._renderService.dimensions.actualCellHeight
+      );
+      window.electronAPI.resizeTerminal(cols, rows);
+    });
+    resizeObserver.observe(terminalRef.current);
 
     return () => {
-      // Clean up terminal instance if unmounted
-      term.current?.dispose();
+      resizeObserver.disconnect();
+      xterm.current.dispose();
     };
   }, []);
 
-  return (
-    <div
-      ref={terminalRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-      }}
-    />
-  );
+  return <div ref={terminalRef} style={{ height: '100%', width: '100%' }} />;
 };
 
 export default TerminalComponent;

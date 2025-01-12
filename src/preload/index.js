@@ -1,14 +1,18 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { electronAPI } from '@electron-toolkit/preload';
-
+let terminalOutputListenerAdded = false;
 // Custom APIs for renderer
 const customAPI = {
   // Define your custom APIs here
   turnOnHotspot: (ssid, password) => ipcRenderer.invoke('turn-on-hotspot', ssid, password),
-  
-  sendInput: (data) => ipcRenderer.send('terminal-input', data),
-  onOutput: (callback) => ipcRenderer.on('terminal-output', (_, data) => callback(data)),
-
+  sendToTerminal: (data) => ipcRenderer.invoke('terminal-data', data),
+  resizeTerminal: (cols, rows) => ipcRenderer.invoke('terminal-resize', cols, rows),
+  onTerminalOutput: (callback) => {
+    if (!terminalOutputListenerAdded) {
+      ipcRenderer.on('terminal-output', (event, data) => callback(data));
+      terminalOutputListenerAdded = true;
+    }
+  },
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to
